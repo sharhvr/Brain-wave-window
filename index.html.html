@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Window V3</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07101d;color:#edf5ff;font-family:Arial,sans-serif}.wrap{max-width:1200px;margin:auto;padding:16px}
+h1{margin:0;font-size:29px}.sub{color:#9db0c8;margin:5px 0 15px}.grid{display:grid;grid-template-columns:1.3fr .9fr;gap:15px}
+.card{background:#101c2d;border:1px solid #293b54;border-radius:18px;padding:15px;box-shadow:0 14px 40px #0007}
+.scene{height:610px;position:relative;overflow:hidden;border-radius:14px;background:linear-gradient(#193b5a,#285c78 55%,#172536 55%,#101721)}
+.sun{position:absolute;right:40px;top:28px;width:68px;height:68px;border-radius:50%;background:#ffe79b;box-shadow:0 0 55px #ffe082;transition:.3s}
+.cloud{position:absolute;left:30px;top:40px;width:120px;height:35px;border-radius:40px;background:#c9d5df88;opacity:.15;transition:.3s}
+.building{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(#18283a,#0d1520)}
+.window{position:absolute;width:min(435px,70vw);height:490px;left:50%;top:53%;transform:translate(-50%,-50%);border:17px solid #4b5666;border-radius:10px;background:#050d16;box-shadow:0 0 0 5px #202b3a,0 22px 55px #000b;transition:.55s;perspective:900px}
+.window.open{transform:translate(-50%,-50%) perspective(900px) rotateY(-18deg);transform-origin:right center}
+.frame{position:absolute;inset:-2px;pointer-events:none;border:3px solid #78869866}.glass{position:absolute;inset:0;overflow:hidden;background:rgba(190,230,255,.92);transition:.45s}
+.glass:after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,#fff4,transparent 28%,transparent 70%,#fff2);pointer-events:none}
+.cross:before,.cross:after{content:"";position:absolute;background:#cceeff55;z-index:2}.cross:before{width:3px;top:0;bottom:0;left:50%}.cross:after{height:3px;left:0;right:0;top:50%}
+.tint,.heat,.uv{position:absolute;inset:0;transition:.45s;pointer-events:none}.tint{background:#07192d;opacity:0}.heat{background:radial-gradient(circle at 50% 50%,#ff9b3d44,transparent 65%);opacity:0}.uv{background:linear-gradient(120deg,#8cf3ff33,#fff0);opacity:0}
+.rain{position:absolute;inset:0;opacity:0;transition:.3s;background:repeating-linear-gradient(105deg,transparent 0 16px,#b9e1ff99 17px 19px,transparent 20px 34px);animation:rain .3s linear infinite;pointer-events:none;z-index:5}@keyframes rain{to{background-position:0 34px}}
+.rays{position:absolute;left:-210px;top:110px;width:700px;height:380px;opacity:.85}.ray{position:absolute;width:560px;height:3px;background:linear-gradient(90deg,transparent,#ffedac,transparent);transform:rotate(-9deg)}.r1{top:20px}.r2{top:95px}.r3{top:170px}.r4{top:245px}.r5{top:320px}
+.servo{position:absolute;right:12px;top:12px;background:#21334a;border:1px solid #52647a;padding:8px 10px;border-radius:10px;font-size:11px;text-align:center;z-index:10}.arm{height:6px;width:72px;background:#e8f0fa;border-radius:5px;position:absolute;left:24px;top:41px;transform-origin:7px 50%;transition:.3s}.badge{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#06101ddd;border-radius:20px;padding:7px 13px;font-weight:bold;white-space:nowrap;z-index:10}
+.big{font-size:38px;font-weight:800}.state{font-size:23px;font-weight:800;margin-bottom:10px}.modes{display:flex}.modes button{flex:1}
+button{background:#1b2b42;border:1px solid #3b526e;color:#edf5ff;border-radius:9px;padding:9px 10px;margin:3px;cursor:pointer}button:hover{background:#2a415e}.active{background:#396d96}
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;margin-top:8px;color:#c7d5e6}
+.switch input{display:none}.slider{width:44px;height:24px;background:#39495d;border-radius:20px;position:relative;transition:.25s}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#edf5ff;border-radius:50%;transition:.25s}
+.switch input:checked+.slider{background:#396d96}.switch input:checked+.slider:before{transform:translateX(20px)}
+.privacy-on{outline:2px solid #78caff}
+.row{margin:12px 0}.row label{display:flex;justify-content:space-between;color:#c7d5e6;margin-bottom:6px}input[type=range]{width:100%;accent-color:#78caff}
+.metrics,.features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.metric,.feature{background:#0a1525;padding:9px;border-radius:10px;color:#aebfd2}.metric b{display:block;color:#f4f8ff;font-size:18px;margin-top:3px}.feature b{color:#f4f8ff}.note{color:#9db0c8;font-size:12px;line-height:1.45;margin-top:12px}
+.alert{margin-top:10px;padding:9px;border-radius:10px;background:#16283c;color:#cfe5ff;font-size:13px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.scene{height:550px}.window{height:425px}}
+</style></head><body><div class="wrap">
+<h1>🪟 Smart Window V3</h1><div class="sub">Adaptive glass • rain protection • thermal control • acoustic protection • ventilation</div>
+<div class="grid"><section class="card scene">
+<div class="sun" id="sun"></div><div class="cloud" id="cloud"></div><div class="building"></div>
+<div class="rays"><div class="ray r1"></div><div class="ray r2"></div><div class="ray r3"></div><div class="ray r4"></div><div class="ray r5"></div></div>
+<div class="rain" id="rain"></div>
+<div class="window" id="window"><div class="glass" id="glass"><div class="cross"></div><div class="tint" id="tint"></div><div class="heat" id="heatOverlay"></div><div class="uv" id="uv"></div></div><div class="frame"></div>
+<div class="servo">⚙️ POLARIZER<div class="arm" id="arm"></div><small id="angleSmall">0°</small></div><div class="badge" id="badge">CLEAR • CLOSED</div></div>
+</section>
+<section class="card">
+<div class="big" id="lightText">25%</div><div class="state" id="stateText">CLEAR</div>
+<div class="modes"><button id="auto" class="active" onclick="setMode('auto')">🤖 AUTO</button><button id="manual" onclick="setMode('manual')">🎛️ MANUAL</button></div>
+<div class="row"><label>☀️ Light <span id="lightVal">25%</span></label><input id="light" type="range" min="0" max="100" value="25" oninput="update()"></div>
+<div class="row"><label>🌡️ Temperature <span id="tempVal">28°C</span></label><input id="temp" type="range" min="10" max="45" value="28" oninput="update()"></div>
+<div class="row"><label>🌧️ Rain <span id="rainVal">0%</span></label><input id="rainSlider" type="range" min="0" max="100" value="0" oninput="update()"></div>
+<div class="row"><label>🔊 Outside noise <span id="noiseVal">20%</span></label><input id="noise" type="range" min="0" max="100" value="20" oninput="update()"></div>
+<div class="row" id="angleRow" style="display:none"><label>🔄 Polarizer angle <span id="angleVal">0°</span></label><input id="angle" type="range" min="0" max="180" value="0" oninput="update()"></div>
+<div><b>Conditions</b><br><button onclick="preset(15,22,0,15)">🌙 Night</button><button onclick="preset(45,25,5,25)">☁️ Cloudy</button><button onclick="preset(90,33,0,35)">☀️ Sunny</button><button onclick="preset(80,29,90,55)">🌧️ Rain</button><button onclick="preset(95,40,0,80)">🔥 Heatwave</button></div>
+<div style="margin-top:9px"><b>Window control</b><br><button onclick="manualOpen(false)">🔒 CLOSE</button><button onclick="manualOpen(true)">🪟 OPEN</button></div>
+<div style="margin-top:9px"><b>Extra controls</b><br><button onclick="toggleSound()" id="soundBtn">🔊 Sound sensor ON</button><button onclick="togglePrivacy()" id="privacyBtn">🔐 Privacy OFF</button><button onclick="nightGlass()" id="nightBtn">🌙 Night mode OFF</button>
+<label class="switch"><input type="checkbox" id="privacySwitch" onchange="togglePrivacy()"><span class="slider"></span><span id="privacyLabel">🔓 Privacy mode OFF</span></label></div>
+<div class="metrics"><div class="metric">LDR<b id="ldr">256</b></div><div class="metric">Polarizer<b id="servoAngle">45°</b></div><div class="metric">Transmission<b id="trans">100%</b></div><div class="metric">Heat shield<b id="heat">LOW</b></div></div>
+<div class="features"><div class="feature">💧 Rain protection: <b id="rainState">DRY</b></div><div class="feature">🌡️ Thermal control: <b id="thermal">NORMAL</b></div><div class="feature">🛡️ UV filter: <b id="uvState">OFF</b></div><div class="feature">🔇 Acoustic mode: <b id="noiseState">NORMAL</b></div><div class="feature">🌬️ Ventilation: <b id="ventState">CLOSED</b></div><div class="feature">🏠 Security: <b id="security">SECURE</b></div></div>
+<div class="alert" id="decision">System: monitoring environment.</div>
+<div class="note"><b>Smart logic:</b> High sunlight or high temperature increases tint. Rain closes the window. High temperature with dry conditions opens it for ventilation when light is not extreme. High noise closes the window and activates acoustic protection. The sound control now has a real microphone-style input using your device microphone when permission is granted, with the slider remaining as a fallback.</div>
+</section></div></div>
+<script>
+let mode='auto',isOpen=false,soundOn=true,night=false,privacy=false,mic=null,micStream=null,lastState='';
+const $=id=>document.getElementById(id);
+function setMode(m){mode=m;$('auto').classList.toggle('active',m==='auto');$('manual').classList.toggle('active',m==='manual');$('angleRow').style.display=m==='manual'?'block':'none';update()}
+function preset(l,t,r,n){$('light').value=l;$('temp').value=t;$('rainSlider').value=r;$('noise').value=n;update()}
+function manualOpen(v){isOpen=v;update()}
+function nightGlass(){night=!night;$('nightBtn').textContent=night?'☀️ Night mode ON':'🌙 Night mode OFF';update()}
+function togglePrivacy(){
+ privacy=$('privacySwitch').checked;
+ $('privacyLabel').textContent=privacy?'🔒 Privacy mode ON':'🔓 Privacy mode OFF';
+ document.body.classList.toggle('privacy-on',privacy);
+ if(privacy){
+   if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;mic=null;}
+   soundOn=false;$('soundBtn').textContent='🔇 Sound sensor OFF';
+   $('noise').value=0;
+   $('decision').textContent='🔒 Privacy mode: microphone disabled and audio sensing stopped.';
+ } else {
+   $('decision').textContent='🔓 Privacy mode OFF: microphone can be enabled again.';
+ }
+ update();
+}
+function beep(f=650,d=.08){if(!soundOn)return;try{let c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.value=.035;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+async function toggleSound(){
+ soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊 Sound sensor ON':'🔇 Sound sensor OFF';
+ if(soundOn && !mic){
+   try{micStream=await navigator.mediaDevices.getUserMedia({audio:true});let ac=new (window.AudioContext||window.webkitAudioContext)(),src=ac.createMediaStreamSource(micStream),an=ac.createAnalyser();an.fftSize=256;src.connect(an);let data=new Uint8Array(an.frequencyBinCount);
+   function sample(){if(!soundOn)return;an.getByteTimeDomainData(data);let sum=0;for(let x of data){let v=(x-128)/128;sum+=v*v}let rms=Math.sqrt(sum/data.length);let micPct=Math.min(100,Math.round(rms*500));if(micPct>3){$('noise').value=Math.max(+$('noise').value,micPct)}update();requestAnimationFrame(sample)}sample();
+   }catch(e){$('decision').textContent='Microphone permission unavailable. Use the Outside noise slider as the sound sensor.'}
+ }
+ update()
+}
+function togglePrivacy(){
+  privacy=!privacy;
+  if(privacy){
+    isOpen=false;
+    soundOn=false;
+    $('soundBtn').textContent='🔇 Sound sensor OFF';
+    $('privacyBtn').textContent='🔒 Privacy ON';
+    if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}
+  }else{
+    $('privacyBtn').textContent='🔐 Privacy OFF';
+  }
+  update();
+}
+function update(){
+ let light=+$('light').value,temp=+$('temp').value,rain=+$('rainSlider').value,noise=+$('noise').value,angle;
+ // AUTO angle considers BOTH light and heat, so high temperature cannot incorrectly produce a clear window.
+ if(mode==='auto'){
+   let heatDemand=Math.max(0,temp-24)*4.2;
+   let sunDemand=light*1.05;
+   angle=Math.round(Math.min(180,Math.max(0,sunDemand+heatDemand)));
+   if(rain>=55){isOpen=false}
+   else if(noise>=70){isOpen=false}
+   else if(temp>=34 && light<82){isOpen=true}
+   else if(temp<=20 && rain<20 && noise<55){isOpen=true}
+ }else angle=+$('angle').value;
+ let trans=Math.round(100*Math.pow(Math.cos(angle*Math.PI/180),2));
+ // Temperature adds a physical-looking heat tint even if polarizer is near clear.
+ let thermalTint=Math.max(0,Math.min(45,(temp-27)*2.5));
+ trans=Math.round(Math.max(8,trans-thermalTint));
+ if(night)trans=Math.min(trans,35);
+  if(privacy){isOpen=false;trans=0;}
+ let state=trans>70?'CLEAR':trans>32?'PARTIALLY TINTED':'DARK';
+ let opacity=Math.max(0,Math.min(.88,(100-trans)/100));
+ $('glass').style.background='rgba(185,225,255,'+(privacy?1:Math.max(.12,trans/100))+')';$('tint').style.opacity=privacy?1:opacity;
+ $('heatOverlay').style.opacity=temp>=30?Math.min(.65,(temp-27)/20):0;$('uv').style.opacity=light>=55?.6:0;
+ $('rain').style.opacity=rain/100;$('sun').style.opacity=Math.max(.08,light/100);$('cloud').style.opacity=light<65?.35:0;
+ $('arm').style.transform='rotate('+angle+'deg)';$('angleSmall').textContent=angle+'°';
+ $('badge').textContent=state+' • '+(isOpen?'OPEN':'CLOSED');$('stateText').textContent=state;$('lightText').textContent=light+'%';
+ $('lightVal').textContent=light+'%';$('tempVal').textContent=temp+'°C';$('rainVal').textContent=rain+'%';$('noiseVal').textContent=noise+'%';
+ $('angleVal').textContent=angle+'°';$('servoAngle').textContent=angle+'°';$('ldr').textContent=Math.round(light*10.23);$('trans').textContent=trans+'%';
+ $('heat').textContent=temp>=35?'HIGH':temp>=30?'MEDIUM':'LOW';
+ $('rainState').textContent=rain>=55?'RAIN → CLOSED':rain>=15?'WET':'DRY';
+ $('thermal').textContent=temp>=35?'COOL + TINT':temp>=30?'HEAT SHIELD':'NORMAL';
+ $('uvState').textContent=light>=55?'ACTIVE':'OFF';$('noiseState').textContent=noise>=70?'HIGH BARRIER':'NORMAL';
+ $('ventState').textContent=isOpen?'OPEN':'CLOSED';$('security').textContent=rain>=55||noise>=70?'SECURE':'SECURE';
+ let decision;
+ if(rain>=55)decision='🌧️ Rain detected: window CLOSED automatically.';
+ else if(noise>=70)decision='🔊 High noise detected: window CLOSED + acoustic barrier.';
+ else if(temp>=35)decision='🔥 High temperature: strong tint + heat protection active.';
+ else if(temp>=30)decision='🌡️ Warm conditions: thermal tint is increasing.';
+ else if(isOpen)decision='🌬️ Comfortable conditions: window OPEN for ventilation.';
+ else decision='✅ Environment comfortable: smart glass regulating light.';
+ $('decision').textContent=decision;
+ if(state!==lastState){if(lastState)beep(state==='DARK'?350:state==='CLEAR'?800:560);lastState=state}
+}
+update();
+</script></body></html>
